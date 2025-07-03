@@ -1,20 +1,26 @@
 from ultralytics import YOLO
 import cv2
-import serial
 import time
+import requests
+import serial
 
 serial_port = '/dev/ttyACM0'  # Change this to the appropriate port
 baud_rate = 9600
 ser = serial.Serial(serial_port, baud_rate)
 time.sleep(2)
 
-model = YOLO('last_single_class_new.pt')
+#model = YOLO('last_single_class_new.pt')
+model = YOLO('last.pt')
 video_path = "vid1.mp4"
-
-
-cap = cv2.VideoCapture(video_path)
+# "http://100.81.193.20:8080/video"
+cap = cv2.VideoCapture("/dev/video0")
 cap.set(5, 1280)
 cap.set(4, 1024)
+
+
+node_url = "http://100.81.193.20/?State="
+time.sleep(2)
+
 
 cv2.namedWindow('YOLO V8 Detection', cv2.WINDOW_NORMAL)
 cv2.resizeWindow('YOLO V8 Detection', 1280, 1024)
@@ -32,7 +38,7 @@ while True:
     # results = model.predict(img)
     results = model(img)
 
-    #results1 = model(img)
+    # results1 = model(img)
     img = results[0].plot()
     # annotator = Annotator(img)
 
@@ -49,7 +55,7 @@ while True:
 
                     boxes = r.boxes[0].cpu().numpy()
                     for box in boxes:
-                        b = box.xyxy[0]  # get box coordinates in (left, top, right, bottom) format
+                        b = box.xyxy[0]  # Bounding box coordinates
 
                         c = box.cls
 
@@ -71,20 +77,38 @@ while True:
 
                         if img_width // 2 + left_offset <= diagonal_center[0] <= img_width // 2 + right_offset:
                             print("FORWARD")
+
+                            cv2.putText(img, 'FORWARD', (50, 50),
+                                        cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2, cv2.LINE_AA)
+                            requests.post(node_url+"F")
+                            break
+
                             command = 'F'
 
                         if diagonal_center[0] < img_width // 2 + left_offset:
                             print("LEFT")
+                            cv2.putText(img, 'LEFT', (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2,
+                                        cv2.LINE_AA)
+                            requests.post(node_url+"L")
+                            break
+
                             command = 'L'
 
                         if diagonal_center[0] > img_width // 2 + right_offset:
                             print("RIGHT")
-                            command = 'R'
+                            cv2.putText(img, 'RIGHT', (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2,
+                                        cv2.LINE_AA)
+                            requests.post(node_url+"R")
+                            break
 
-                        # annotator.box_label(b, model.names[int(c)])
+                            # command = 'R'
+
+                            # annotator.box_label(b, model.names[int(c)])
                 else:
                     result = 'S'
-                    # ser.write(command.encode())
+                    cv2.putText(img, 'STOP', (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2, cv2.LINE_AA)
+
+                    ser.write(command.encode())
 
             # img = annotator.result()
             cv2.imshow('YOLO V8 Detection', img)
@@ -106,4 +130,3 @@ cap.release()
 command = 'S'
 ser.write(command.encode())
 cv2.destroyAllWindows()
-
