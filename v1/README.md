@@ -1,1 +1,0 @@
-An autonomous vehicle designed for navigation and object detection using YOLO, sensor data acquisition, and navigation algorithms. This project integrates deep learning models, sensor communication, and path planning to achieve autonomous movement.

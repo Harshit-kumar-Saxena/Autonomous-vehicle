@@ -1,0 +1,58 @@
+# AetherNav Stack Configuration
+# System-wide settings for hardware, perception, planning, and execution
+
+# Hardware interface settings
+hardware:
+  port: "/dev/ttyACM0"      # Serial port for AetherNav board
+  baudrate: 500000          # Baud rate
+  timeout: 1.0              # Command timeout (seconds)
+  auto_reconnect: true      # Automatically reconnect on disconnect
+  
+# Camera settings
+camera:
+  device_id: 2              # V4L2 camera device ID
+  width: 640                # Capture width
+  height: 480               # Capture height
+  fps: 30                   # Target framerate
+  backend: "v4l2"           # OpenCV backend: v4l2, gstreamer, auto
+
+# Segmentation model settings
+segmentation:
+  engine_path: "/home/wolf/stereo/fastscnn_road.engine"  # TensorRT engine
+  input_width: 512          # Model input width
+  input_height: 256         # Model input height
+  roi_start_ratio: 0.7      # ROI starts at 70% of image height (bottom 30%)
+  confidence_threshold: 0.4 # Minimum probability for lane detection
+  min_lane_pixels: 100      # Minimum pixels to consider lane valid
+
+# Lane following planner settings
+planner:
+  type: "lane_follower"     # Options: lane_follower, waypoint
+  
+  lane_follower:
+    cruise_linear_vel: 0.3  # m/s - Default forward speed
+    min_linear_vel: 0.1     # m/s - Minimum speed during turns
+    deadband_min: 0.42      # Lane center deadband (fraction)
+    deadband_max: 0.58      # Lane center deadband (fraction)
+    angular_gain: 2.0       # Proportional gain for steering
+    slow_down_on_curve: true  # Reduce speed when turning
+    curve_slow_factor: 0.5  # Speed multiplier during turns
+    
+    # Recovery behavior when lane is lost
+    recovery:
+      enabled: true
+      hold_last_command_frames: 10  # Continue last command for N frames
+      stop_after_lost_frames: 30    # Stop after N consecutive lost frames
+
+# Executor settings
+executor:
+  loop_rate_hz: 30          # Main control loop frequency
+  enable_telemetry: true    # Log telemetry data
+  telemetry_log_interval: 10  # Log every N frames
+  dry_run: false            # If true, don't send commands to hardware
+  
+# Logging settings
+logging:
+  level: "INFO"             # Options: DEBUG, INFO, WARNING, ERROR
+  log_to_file: false        # Write logs to file
+  log_file_path: "logs/aethernav.log"

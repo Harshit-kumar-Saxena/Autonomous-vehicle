@@ -1,0 +1,21 @@
+# AetherNav Stack Requirements
+
+# Core dependencies
+numpy>=1.21.0
+opencv-python>=4.5.0
+PyYAML>=6.0
+
+# TensorRT (Jetson-specific, install via JetPack)
+# tensorrt
+# pycuda
+
+# Serial communication (for AetherNav SDK)
+pyserial>=3.5
+
+# Optional: Testing
+pytest>=7.0.0
+pytest-cov>=4.0.0
+
+# Optional: Development tools
+black>=22.0.0
+mypy>=1.0.0
