@@ -159,7 +159,7 @@ main() {
     pip install --upgrade pip -q
     
     # Install requirements
-    REQUIREMENTS_FILE="$PROJECT_ROOT/aethernav_stack/requirements.txt"
+    REQUIREMENTS_FILE="$PROJECT_ROOT/requirements.txt"
     
     if [ -f "$REQUIREMENTS_FILE" ]; then
         print_info "Installing from requirements.txt..."
