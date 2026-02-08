@@ -1,22 +1,19 @@
-# AetherNav Robot Configuration
-# Physical parameters and motion limits for the differential drive robot
-
 robot:
   name: "AetherNav Bot"
   
   # Physical dimensions (meters)
-  wheel_radius: 0.05        # 5cm wheels - ADJUST TO YOUR ROBOT
+  wheel_radius: 0.055       # 55 cm wheels - ADJUST TO YOUR ROBOT
   track_width: 0.20         # 20cm between wheel centers - ADJUST TO YOUR ROBOT
   
   # Velocity limits
-  max_linear_vel: 0.5       # m/s - Maximum robot linear velocity
+  max_linear_vel: 0.2       # m/s - Maximum robot linear velocity
   max_angular_vel: 1.0      # rad/s - Maximum robot angular velocity
   max_wheel_vel: 10.0       # rad/s - Maximum wheel angular velocity
   max_wheel_accel: 5.0      # rad/s² - Maximum wheel acceleration
 
 # Controller configuration  
 controller:
-  type: "pid"               # Options: pid, lqr, feedforward
+  type: "pid"               # Options: pid, lqr, feedforward # Abhi lqr and feedforward mature nahi hai, kaam karna hai ispe
   
   # PID gains for velocity tracking
   pid:

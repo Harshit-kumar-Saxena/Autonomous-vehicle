@@ -1,9 +1,3 @@
-"""
-Configuration loader for AetherNav stack.
-
-Loads YAML configuration files and provides typed access to configuration values.
-"""
-
 from dataclasses import dataclass, field
 from typing import Optional, Dict, Any
 from pathlib import Path
@@ -17,7 +11,6 @@ logger = get_logger("config")
 
 @dataclass
 class PIDGains:
-    """PID controller gains."""
     kp: float = 1.0
     ki: float = 0.0
     kd: float = 0.0
@@ -26,18 +19,17 @@ class PIDGains:
 
 @dataclass
 class RobotConfig:
-    """Robot physical parameters and motion limits."""
     # Physical dimensions
     name: str = "AetherNav Bot"
-    wheel_radius: float = 0.05      # meters
-    track_width: float = 0.20       # meters
-    
+    wheel_radius: float = 0.05  # meters
+    track_width: float = 0.20  # meters
+
     # Velocity limits
-    max_linear_vel: float = 0.5     # m/s
-    max_angular_vel: float = 1.0    # rad/s
-    max_wheel_vel: float = 10.0     # rad/s
-    max_wheel_accel: float = 5.0    # rad/s²
-    
+    max_linear_vel: float = 0.5  # m/s
+    max_angular_vel: float = 1.0  # rad/s
+    max_wheel_vel: float = 10.0  # rad/s
+    max_wheel_accel: float = 5.0  # rad/s²
+
     # Controller settings
     controller_type: str = "pid"
     pid_linear: PIDGains = field(default_factory=PIDGains)
@@ -46,9 +38,10 @@ class RobotConfig:
 
 @dataclass
 class CameraConfig:
-    """Camera capture settings."""
-    use_video_file: bool = False  # Use video file instead of live camera
-    video_path: str = ""          # Path to video file
+    use_video_file: bool = (
+        False  # Use video file instead of live camera # meant for testing and mock mode
+    )
+    video_path: str = ""  # Path to video file
     device_id: int = 2
     width: int = 640
     height: int = 480
@@ -58,30 +51,29 @@ class CameraConfig:
 
 @dataclass
 class SegmentationConfig:
-    """Segmentation model settings."""
     # Backend selection
     inference_backend: str = "tensorrt"  # "onnx" or "tensorrt"
-    engine_path: str = ""                # TensorRT engine path
-    onnx_path: str = ""                  # ONNX model path
-    
+    engine_path: str = ""  # TensorRT engine path
+    onnx_path: str = ""  # ONNX model path
+
     # Model input
     input_width: int = 512
     input_height: int = 256
     roi_start_ratio: float = 0.7
     confidence_threshold: float = 0.4
     min_lane_pixels: int = 100
-    
+
     # Mask filtering
     morphology_kernel_size: int = 7
     morphology_iterations: int = 2
-    
+
     # Centerline extraction
     min_road_width: int = 50
     max_jump_threshold: int = 80
     centerline_skip_rows: int = 5
     use_ransac_fit: bool = True
     ransac_residual_threshold: int = 20
-    
+
     # Temporal smoothing
     temporal_window: int = 5
     temporal_alpha: float = 0.7
@@ -89,7 +81,6 @@ class SegmentationConfig:
 
 @dataclass
 class LaneFollowerConfig:
-    """Lane following planner settings."""
     cruise_linear_vel: float = 0.3
     min_linear_vel: float = 0.1
     deadband_min: float = 0.42
@@ -104,7 +95,6 @@ class LaneFollowerConfig:
 
 @dataclass
 class HardwareConfig:
-    """Hardware interface settings."""
     mock_hardware: bool = False  # Use mock hardware (no serial connection)
     port: str = "/dev/ttyACM0"
     baudrate: int = 500000
@@ -114,7 +104,6 @@ class HardwareConfig:
 
 @dataclass
 class ExecutorConfig:
-    """Main executor settings."""
     loop_rate_hz: int = 30
     enable_telemetry: bool = True
     telemetry_log_interval: int = 10
@@ -124,7 +113,6 @@ class ExecutorConfig:
 
 @dataclass
 class StackConfig:
-    """Complete stack configuration."""
     hardware: HardwareConfig = field(default_factory=HardwareConfig)
     camera: CameraConfig = field(default_factory=CameraConfig)
     segmentation: SegmentationConfig = field(default_factory=SegmentationConfig)
@@ -134,33 +122,25 @@ class StackConfig:
 
 
 class ConfigLoader:
-    """Loads and parses YAML configuration files."""
-    
+
     def __init__(self, config_dir: Optional[Path] = None):
-        """
-        Initialize config loader.
-        
-        Args:
-            config_dir: Directory containing config files. Defaults to
-                        the 'config' directory in the package.
-        """
+
         if config_dir is None:
             config_dir = Path(__file__).parent
         self.config_dir = Path(config_dir)
-    
+
     def load_robot_config(self, filename: str = "robot_config.yaml") -> RobotConfig:
-        """Load robot configuration."""
         config_path = self.config_dir / filename
         data = self._load_yaml(config_path)
-        
+
         robot_data = data.get("robot", {})
         controller_data = data.get("controller", {})
-        
+
         # Parse PID gains
         pid_data = controller_data.get("pid", {})
         pid_linear = PIDGains(**pid_data.get("linear", {}))
         pid_angular = PIDGains(**pid_data.get("angular", {}))
-        
+
         return RobotConfig(
             name=robot_data.get("name", "AetherNav Bot"),
             wheel_radius=robot_data.get("wheel_radius", 0.05),
@@ -173,13 +153,11 @@ class ConfigLoader:
             pid_linear=pid_linear,
             pid_angular=pid_angular,
         )
-    
+
     def load_stack_config(self, filename: str = "stack_config.yaml") -> StackConfig:
-        """Load stack configuration."""
         config_path = self.config_dir / filename
         data = self._load_yaml(config_path)
-        
-        # Parse hardware config
+
         hw_data = data.get("hardware", {})
         hardware = HardwareConfig(
             mock_hardware=hw_data.get("mock_hardware", False),
@@ -188,8 +166,7 @@ class ConfigLoader:
             timeout=hw_data.get("timeout", 1.0),
             auto_reconnect=hw_data.get("auto_reconnect", True),
         )
-        
-        # Parse camera config
+
         cam_data = data.get("camera", {})
         camera = CameraConfig(
             use_video_file=cam_data.get("use_video_file", False),
@@ -200,21 +177,18 @@ class ConfigLoader:
             fps=cam_data.get("fps", 30),
             backend=cam_data.get("backend", "v4l2"),
         )
-        
-        # Parse segmentation config
+
         seg_data = data.get("segmentation", {})
-        
-        # Resolve relative paths for model files (relative to stack root)
+
         stack_root = self.config_dir.parent
         engine_path = seg_data.get("engine_path", "")
         onnx_path = seg_data.get("onnx_path", "")
-        
-        # Convert relative paths to absolute
+
         if engine_path and not os.path.isabs(engine_path):
             engine_path = str(stack_root / engine_path)
         if onnx_path and not os.path.isabs(onnx_path):
             onnx_path = str(stack_root / onnx_path)
-        
+
         segmentation = SegmentationConfig(
             inference_backend=seg_data.get("inference_backend", "tensorrt"),
             engine_path=engine_path,
@@ -234,8 +208,7 @@ class ConfigLoader:
             temporal_window=seg_data.get("temporal_window", 5),
             temporal_alpha=seg_data.get("temporal_alpha", 0.7),
         )
-        
-        # Parse lane follower config
+
         planner_data = data.get("planner", {})
         lf_data = planner_data.get("lane_follower", {})
         recovery_data = lf_data.get("recovery", {})
@@ -251,8 +224,7 @@ class ConfigLoader:
             hold_last_command_frames=recovery_data.get("hold_last_command_frames", 10),
             stop_after_lost_frames=recovery_data.get("stop_after_lost_frames", 30),
         )
-        
-        # Parse executor config
+
         exec_data = data.get("executor", {})
         executor = ExecutorConfig(
             loop_rate_hz=exec_data.get("loop_rate_hz", 30),
@@ -261,11 +233,10 @@ class ConfigLoader:
             dry_run=exec_data.get("dry_run", False),
             show_visualization=exec_data.get("show_visualization", False),
         )
-        
-        # Parse logging
+
         log_data = data.get("logging", {})
         log_level = log_data.get("level", "INFO")
-        
+
         return StackConfig(
             hardware=hardware,
             camera=camera,
@@ -274,15 +245,14 @@ class ConfigLoader:
             executor=executor,
             log_level=log_level,
         )
-    
+
     def _load_yaml(self, path: Path) -> Dict[str, Any]:
-        """Load a YAML file and return its contents as a dictionary."""
         if not path.exists():
             logger.warning(f"Config file not found: {path}, using defaults")
             return {}
-        
+
         try:
-            with open(path, 'r') as f:
+            with open(path, "r") as f:
                 data = yaml.safe_load(f)
                 return data if data else {}
         except Exception as e:

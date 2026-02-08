@@ -50,8 +50,6 @@ htmlcov/
 # *.png
 
 # Logs
-*.log
-logs/
 
 # OS
 .DS_Store
