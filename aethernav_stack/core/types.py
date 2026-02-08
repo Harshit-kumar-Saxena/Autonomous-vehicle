@@ -119,6 +119,7 @@ class SegmentationResult:
     
     Attributes:
         mask: Raw segmentation mask (H x W probability or binary)
+        centerline_points: List of (x, y) centerline points from bottom to top
         lane_center_normalized: Lane center as fraction of image width
                                 (0.0 = left edge, 1.0 = right edge)
         lane_detected: Whether a valid lane was detected
@@ -126,6 +127,7 @@ class SegmentationResult:
         timestamp: Time when frame was captured (seconds since epoch)
     """
     mask: np.ndarray
+    centerline_points: list = field(default_factory=list)
     lane_center_normalized: float = 0.5
     lane_detected: bool = False
     confidence: float = 0.0

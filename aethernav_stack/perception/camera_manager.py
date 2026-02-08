@@ -64,6 +64,8 @@ class CameraManager:
         self._last_capture_time = 0.0
         self._fps_tracker = _FPSTracker()
         self._rate_limited_logger = RateLimitedLogger(logger, min_interval=5.0)
+        self._using_video_file = config.use_video_file
+        self._video_loop = True  # Loop video when reaching end
         
         # Determine backend
         backend_map = {
@@ -78,16 +80,45 @@ class CameraManager:
     
     def open(self) -> bool:
         """
-        Open the camera.
+        Open the camera or video file.
         
         Returns:
-            True if camera opened successfully
+            True if camera/video opened successfully
         """
         if self._cap is not None and self._cap.isOpened():
             logger.warning("Camera already open, closing first")
             self.close()
         
         try:
+            # Video file mode
+            if self._using_video_file:
+                import os
+                if not self.config.video_path or not os.path.exists(self.config.video_path):
+                    logger.error(f"Video file not found: {self.config.video_path}")
+                    return False
+                
+                logger.info(f"Opening video file: {self.config.video_path}")
+                self._cap = cv2.VideoCapture(self.config.video_path)
+                
+                if not self._cap.isOpened():
+                    logger.error(f"Failed to open video file: {self.config.video_path}")
+                    return False
+                
+                # Get video properties
+                actual_width = int(self._cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+                actual_height = int(self._cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+                actual_fps = self._cap.get(cv2.CAP_PROP_FPS)
+                total_frames = int(self._cap.get(cv2.CAP_PROP_FRAME_COUNT))
+                
+                logger.info(
+                    f"Video opened: {actual_width}x{actual_height} @ {actual_fps:.1f} FPS, "
+                    f"{total_frames} frames (loop={self._video_loop})"
+                )
+                
+                self._frame_count = 0
+                return True
+            
+            # Live camera mode
             logger.info(
                 f"Opening camera {self.config.device_id} with backend "
                 f"{self._backend.name} ({self.config.width}x{self.config.height})"
@@ -120,7 +151,7 @@ class CameraManager:
             return True
             
         except Exception as e:
-            logger.error(f"Exception opening camera: {e}")
+            logger.error(f"Exception opening camera/video: {e}")
             return False
     
     def close(self) -> None:
@@ -132,7 +163,7 @@ class CameraManager:
     
     def read(self) -> Optional[CapturedFrame]:
         """
-        Capture a frame from the camera.
+        Capture a frame from the camera or video file.
         
         Returns:
             CapturedFrame if successful, None otherwise
@@ -145,8 +176,15 @@ class CameraManager:
         try:
             ret, frame = self._cap.read()
             
+            # Handle video loop
+            if not ret and self._using_video_file and self._video_loop:
+                self._cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+                ret, frame = self._cap.read()
+                if ret:
+                    logger.debug("Video looped to beginning")
+            
             if not ret or frame is None:
-                self._rate_limited_logger.warning("Failed to read frame from camera")
+                self._rate_limited_logger.warning("Failed to read frame from camera/video")
                 return None
             
             timestamp = time.time()

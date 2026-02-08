@@ -146,7 +146,8 @@ class ThreadedExecutor:
         self._perception_thread = PerceptionThread(
             segmentation=self.segmentation,
             input_frames=self._frame_holder,
-            output=self._perception_holder
+            output=self._perception_holder,
+            show_visualization=self.stack_config.executor.show_visualization
         )
         
         self._control_thread = ControlThread(

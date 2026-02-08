@@ -7,6 +7,7 @@ Loads YAML configuration files and provides typed access to configuration values
 from dataclasses import dataclass, field
 from typing import Optional, Dict, Any
 from pathlib import Path
+import os
 import yaml
 
 from ..core.logging_config import get_logger
@@ -46,6 +47,8 @@ class RobotConfig:
 @dataclass
 class CameraConfig:
     """Camera capture settings."""
+    use_video_file: bool = False  # Use video file instead of live camera
+    video_path: str = ""          # Path to video file
     device_id: int = 2
     width: int = 640
     height: int = 480
@@ -56,12 +59,32 @@ class CameraConfig:
 @dataclass
 class SegmentationConfig:
     """Segmentation model settings."""
-    engine_path: str = ""
+    # Backend selection
+    inference_backend: str = "tensorrt"  # "onnx" or "tensorrt"
+    engine_path: str = ""                # TensorRT engine path
+    onnx_path: str = ""                  # ONNX model path
+    
+    # Model input
     input_width: int = 512
     input_height: int = 256
     roi_start_ratio: float = 0.7
     confidence_threshold: float = 0.4
     min_lane_pixels: int = 100
+    
+    # Mask filtering
+    morphology_kernel_size: int = 7
+    morphology_iterations: int = 2
+    
+    # Centerline extraction
+    min_road_width: int = 50
+    max_jump_threshold: int = 80
+    centerline_skip_rows: int = 5
+    use_ransac_fit: bool = True
+    ransac_residual_threshold: int = 20
+    
+    # Temporal smoothing
+    temporal_window: int = 5
+    temporal_alpha: float = 0.7
 
 
 @dataclass
@@ -82,6 +105,7 @@ class LaneFollowerConfig:
 @dataclass
 class HardwareConfig:
     """Hardware interface settings."""
+    mock_hardware: bool = False  # Use mock hardware (no serial connection)
     port: str = "/dev/ttyACM0"
     baudrate: int = 500000
     timeout: float = 1.0
@@ -95,6 +119,7 @@ class ExecutorConfig:
     enable_telemetry: bool = True
     telemetry_log_interval: int = 10
     dry_run: bool = False
+    show_visualization: bool = False  # Show segmentation visualization window
 
 
 @dataclass
@@ -157,6 +182,7 @@ class ConfigLoader:
         # Parse hardware config
         hw_data = data.get("hardware", {})
         hardware = HardwareConfig(
+            mock_hardware=hw_data.get("mock_hardware", False),
             port=hw_data.get("port", "/dev/ttyACM0"),
             baudrate=hw_data.get("baudrate", 500000),
             timeout=hw_data.get("timeout", 1.0),
@@ -166,6 +192,8 @@ class ConfigLoader:
         # Parse camera config
         cam_data = data.get("camera", {})
         camera = CameraConfig(
+            use_video_file=cam_data.get("use_video_file", False),
+            video_path=cam_data.get("video_path", ""),
             device_id=cam_data.get("device_id", 2),
             width=cam_data.get("width", 640),
             height=cam_data.get("height", 480),
@@ -175,13 +203,36 @@ class ConfigLoader:
         
         # Parse segmentation config
         seg_data = data.get("segmentation", {})
+        
+        # Resolve relative paths for model files (relative to stack root)
+        stack_root = self.config_dir.parent
+        engine_path = seg_data.get("engine_path", "")
+        onnx_path = seg_data.get("onnx_path", "")
+        
+        # Convert relative paths to absolute
+        if engine_path and not os.path.isabs(engine_path):
+            engine_path = str(stack_root / engine_path)
+        if onnx_path and not os.path.isabs(onnx_path):
+            onnx_path = str(stack_root / onnx_path)
+        
         segmentation = SegmentationConfig(
-            engine_path=seg_data.get("engine_path", ""),
+            inference_backend=seg_data.get("inference_backend", "tensorrt"),
+            engine_path=engine_path,
+            onnx_path=onnx_path,
             input_width=seg_data.get("input_width", 512),
             input_height=seg_data.get("input_height", 256),
             roi_start_ratio=seg_data.get("roi_start_ratio", 0.7),
             confidence_threshold=seg_data.get("confidence_threshold", 0.4),
             min_lane_pixels=seg_data.get("min_lane_pixels", 100),
+            morphology_kernel_size=seg_data.get("morphology_kernel_size", 7),
+            morphology_iterations=seg_data.get("morphology_iterations", 2),
+            min_road_width=seg_data.get("min_road_width", 50),
+            max_jump_threshold=seg_data.get("max_jump_threshold", 80),
+            centerline_skip_rows=seg_data.get("centerline_skip_rows", 5),
+            use_ransac_fit=seg_data.get("use_ransac_fit", True),
+            ransac_residual_threshold=seg_data.get("ransac_residual_threshold", 20),
+            temporal_window=seg_data.get("temporal_window", 5),
+            temporal_alpha=seg_data.get("temporal_alpha", 0.7),
         )
         
         # Parse lane follower config
@@ -208,6 +259,7 @@ class ConfigLoader:
             enable_telemetry=exec_data.get("enable_telemetry", True),
             telemetry_log_interval=exec_data.get("telemetry_log_interval", 10),
             dry_run=exec_data.get("dry_run", False),
+            show_visualization=exec_data.get("show_visualization", False),
         )
         
         # Parse logging

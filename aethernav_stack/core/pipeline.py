@@ -4,7 +4,9 @@ Pipeline components for threaded execution.
 Clean, single-responsibility classes for each pipeline stage.
 """
 
+import cv2
 import time
+import numpy as np
 from typing import Optional, Callable
 from dataclasses import dataclass
 
@@ -95,16 +97,19 @@ class PerceptionThread(StoppableThread):
         self,
         segmentation,  # SegmentationEngine
         input_frames: LatestHolder[FrameData],
-        output: LatestHolder[PerceptionData]
+        output: LatestHolder[PerceptionData],
+        show_visualization: bool = False
     ):
         super().__init__(name="PerceptionThread")
         self.segmentation = segmentation
         self.input_frames = input_frames
         self.output = output
+        self.show_visualization = show_visualization
         self._inference_count = 0
+        self._last_frame = None  # Store frame for visualization
     
     def on_start(self) -> None:
-        logger.info("Perception thread started")
+        logger.info(f"Perception thread started (visualization={self.show_visualization})")
     
     def run_loop(self) -> None:
         # Wait for a frame (with timeout to check for stop)
@@ -112,6 +117,8 @@ class PerceptionThread(StoppableThread):
         
         if frame_data is None:
             return  # No frame available, loop again
+        
+        self._last_frame = frame_data.image
         
         # Run inference
         seg_result = self.segmentation.infer(frame_data.image)
@@ -122,8 +129,79 @@ class PerceptionThread(StoppableThread):
             segmentation=seg_result,
             timestamp=time.time()
         ))
+        
+        # Show visualization if enabled
+        if self.show_visualization:
+            self._show_visualization(seg_result)
+    
+    def _show_visualization(self, seg_result: SegmentationResult) -> None:
+        """Display segmentation visualization with cv2.imshow."""
+        if self._last_frame is None:
+            return
+        
+        # Create visualization frame
+        vis_frame = self._last_frame.copy()
+        
+        # Resize mask to match frame size
+        h, w = vis_frame.shape[:2]
+        mask_resized = cv2.resize(
+            (seg_result.mask * 255).astype(np.uint8), 
+            (w, h), 
+            interpolation=cv2.INTER_NEAREST
+        )
+        
+        # Create colored overlay
+        overlay = np.zeros_like(vis_frame)
+        overlay[:, :, 1] = mask_resized  # Green channel for road
+        
+        # Blend with original frame
+        alpha = 0.4
+        vis_frame = cv2.addWeighted(vis_frame, 1 - alpha, overlay, alpha, 0)
+        
+        # Draw centerline if available
+        if len(seg_result.centerline_points) > 1:
+            # Scale centerline points to frame size
+            scale_x = w / seg_result.mask.shape[1]
+            scale_y = h / seg_result.mask.shape[0]
+            
+            scaled_points = [
+                (int(pt[0] * scale_x), int(pt[1] * scale_y)) 
+                for pt in seg_result.centerline_points
+            ]
+            
+            # Draw centerline as polyline
+            for i in range(len(scaled_points) - 1):
+                cv2.line(
+                    vis_frame, 
+                    scaled_points[i], 
+                    scaled_points[i + 1], 
+                    (0, 0, 255),  # Red
+                    thickness=3
+                )
+            
+            # Draw lane center indicator at bottom
+            lane_center_x = int(seg_result.lane_center_normalized * w)
+            cv2.circle(vis_frame, (lane_center_x, h - 30), 10, (255, 255, 0), -1)
+            cv2.line(vis_frame, (w // 2, h - 50), (w // 2, h - 10), (255, 255, 255), 2)
+        
+        # Add info text
+        info_text = f"Lane: {'YES' if seg_result.lane_detected else 'NO'} | Conf: {seg_result.confidence:.2f}"
+        cv2.putText(
+            vis_frame, info_text, (10, 30), 
+            cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2
+        )
+        
+        cv2.imshow("AetherNav Segmentation", vis_frame)
+        key = cv2.waitKey(1) & 0xFF
+        
+        # 'q' to quit
+        if key == ord('q'):
+            logger.info("Quit requested via visualization window")
+            self.stop()
     
     def on_stop(self) -> None:
+        if self.show_visualization:
+            cv2.destroyAllWindows()
         logger.info(f"Perception thread stopped ({self._inference_count} inferences)")
 
 

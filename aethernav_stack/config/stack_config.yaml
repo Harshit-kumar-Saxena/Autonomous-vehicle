@@ -3,27 +3,47 @@
 
 # Hardware interface settings
 hardware:
-  port: "/dev/ttyACM0"      # Serial port for AetherNav board
-  baudrate: 500000          # Baud rate
-  timeout: 1.0              # Command timeout (seconds)
-  auto_reconnect: true      # Automatically reconnect on disconnect
+  mock_hardware: true        # If true, use mock hardware (no serial connection required)
+  port: "/dev/ttyACM0"        # Serial port for AetherNav board
+  baudrate: 500000            # Baud rate
+  timeout: 1.0                # Command timeout (seconds)
+  auto_reconnect: true        # Automatically reconnect on disconnect
   
 # Camera settings
 camera:
-  device_id: 2              # V4L2 camera device ID
-  width: 640                # Capture width
-  height: 480               # Capture height
-  fps: 30                   # Target framerate
-  backend: "v4l2"           # OpenCV backend: v4l2, gstreamer, auto
+  use_video_file: true      # If true, use video_path instead of live camera
+  video_path: "/home/knight/General_Workspace/Autonomous-vehicle/inference_video/raw_recording.webm"              # Path to video file (used when use_video_file is true)
+  device_id: 2                # V4L2 camera device ID
+  width: 640                  # Capture width
+  height: 480                 # Capture height
+  fps: 30                     # Target framerate
+  backend: "v4l2"             # OpenCV backend: v4l2, gstreamer, auto
 
 # Segmentation model settings
 segmentation:
-  engine_path: "/home/wolf/stereo/fastscnn_road.engine"  # TensorRT engine
+  inference_backend: "onnx"  # Options: onnx, tensorrt
+  engine_path: "models/fastscnn_road.engine"  # TensorRT engine (relative to stack root)
+  onnx_path: "models/fastscnn_road.onnx"      # ONNX model (relative to stack root)
   input_width: 512          # Model input width
   input_height: 256         # Model input height
   roi_start_ratio: 0.7      # ROI starts at 70% of image height (bottom 30%)
   confidence_threshold: 0.4 # Minimum probability for lane detection
   min_lane_pixels: 100      # Minimum pixels to consider lane valid
+  
+  # Mask filtering parameters
+  morphology_kernel_size: 7   # Kernel size for morphological operations
+  morphology_iterations: 2    # Number of close/open iterations
+  
+  # Centerline extraction parameters
+  min_road_width: 50          # Minimum road width to consider valid
+  max_jump_threshold: 80      # Maximum allowed jump between consecutive centers
+  centerline_skip_rows: 5     # Process every Nth row
+  use_ransac_fit: true        # Use RANSAC for robust curve fitting
+  ransac_residual_threshold: 20  # Pixel threshold for RANSAC inliers
+  
+  # Temporal smoothing
+  temporal_window: 5          # Number of frames to average centerline
+  temporal_alpha: 0.7         # Weight for current frame (0-1)
 
 # Lane following planner settings
 planner:
@@ -50,6 +70,7 @@ executor:
   enable_telemetry: true    # Log telemetry data
   telemetry_log_interval: 10  # Log every N frames
   dry_run: false            # If true, don't send commands to hardware
+  show_visualization: true  # Show segmentation and centerline visualization window
   
 # Logging settings
 logging:

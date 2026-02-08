@@ -55,8 +55,9 @@ class AetherNavHardwareInterface(HardwarePlugin):
         """
         self.config = config
         self.robot_params = robot_params
-        self._sdk: Optional[AetherNavSDK] = None
+        self._sdk: Optional["AetherNavSDK"] = None
         self._connected = False
+        self._mock_mode = config.mock_hardware  # Explicit mock mode from config
         self._rate_limited_logger = RateLimitedLogger(logger, min_interval=5.0)
         
         # Track last commands for status
@@ -70,8 +71,16 @@ class AetherNavHardwareInterface(HardwarePlugin):
         Returns:
             True if connection successful
         """
+        # Explicit mock mode from config
+        if self._mock_mode:
+            logger.info("Running in MOCK HARDWARE mode (config.mock_hardware=True)")
+            self._connected = True
+            return True
+        
+        # SDK not available - fall back to mock mode
         if not SDK_AVAILABLE:
             logger.warning("AetherNav SDK not available - running in mock mode")
+            self._mock_mode = True
             self._connected = True
             return True
         
@@ -168,8 +177,8 @@ class AetherNavHardwareInterface(HardwarePlugin):
         self._last_wheel_cmd = wheels
         self._last_cmd_time = time.time()
         
-        # Mock mode
-        if not SDK_AVAILABLE or self._sdk is None:
+        # Mock mode - just log the command
+        if self._mock_mode or not SDK_AVAILABLE or self._sdk is None:
             logger.debug(
                 f"Mock motor cmd: L={left_pwm_normalized:.2f} dir={left_dir}, "
                 f"R={right_pwm_normalized:.2f} dir={right_dir}"
@@ -197,7 +206,7 @@ class AetherNavHardwareInterface(HardwarePlugin):
         Note: Current SDK may not provide encoder feedback.
         Returns None if not available.
         """
-        if not self._connected or not SDK_AVAILABLE or self._sdk is None:
+        if not self._connected or self._mock_mode or self._sdk is None:
             # In mock mode or no encoders, return last commanded velocity
             # This is open-loop estimation
             return self._last_wheel_cmd
@@ -224,7 +233,7 @@ class AetherNavHardwareInterface(HardwarePlugin):
         Returns:
             Yaw angle in radians, or None if unavailable
         """
-        if not self._connected or not SDK_AVAILABLE or self._sdk is None:
+        if not self._connected or self._mock_mode or self._sdk is None:
             return None
         
         try:
@@ -243,7 +252,7 @@ class AetherNavHardwareInterface(HardwarePlugin):
     
     def read_accelerometer(self) -> Optional[tuple]:
         """Read accelerometer data (ax, ay, az)."""
-        if not self._connected or not SDK_AVAILABLE or self._sdk is None:
+        if not self._connected or self._mock_mode or self._sdk is None:
             return None
         
         try:
@@ -253,7 +262,7 @@ class AetherNavHardwareInterface(HardwarePlugin):
     
     def read_gyroscope(self) -> Optional[tuple]:
         """Read gyroscope data (gx, gy, gz)."""
-        if not self._connected or not SDK_AVAILABLE or self._sdk is None:
+        if not self._connected or self._mock_mode or self._sdk is None:
             return None
         
         try:
@@ -280,6 +289,7 @@ class AetherNavHardwareInterface(HardwarePlugin):
         """Get hardware status for telemetry."""
         status = {
             "connected": self._connected,
+            "mock_mode": self._mock_mode,
             "sdk_available": SDK_AVAILABLE,
             "last_cmd_left": self._last_wheel_cmd.left,
             "last_cmd_right": self._last_wheel_cmd.right,
