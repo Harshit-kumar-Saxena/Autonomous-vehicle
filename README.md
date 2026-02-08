@@ -34,13 +34,14 @@ For automated environment setup, use the setup script:
 ```
 
 **The script will:**
-- Display stylish AETHERNAV banner
+
 - Ask to pull latest from `dev/refactoring` branch
 - Create `.aethernav_env` virtual environment
 - Install all dependencies from requirements.txt
 - Verify installation
 
 After setup, activate with:
+
 ```bash
 source .aethernav_env/bin/activate
 ```
