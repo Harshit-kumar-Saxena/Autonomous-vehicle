@@ -1,0 +1,35 @@
+robot:
+  name: "AetherNav Bot"
+  
+  # Physical dimensions (meters)
+  wheel_radius: 0.055       # 55 cm wheels - ADJUST TO YOUR ROBOT
+  track_width: 0.20         # 20cm between wheel centers - ADJUST TO YOUR ROBOT
+  
+  # Velocity limits
+  max_linear_vel: 0.2       # m/s - Maximum robot linear velocity
+  max_angular_vel: 1.0      # rad/s - Maximum robot angular velocity
+  max_wheel_vel: 10.0       # rad/s - Maximum wheel angular velocity
+  max_wheel_accel: 5.0      # rad/s² - Maximum wheel acceleration
+
+# Controller configuration  
+controller:
+  type: "pid"               # Options: pid, lqr, feedforward # Abhi lqr and feedforward mature nahi hai, kaam karna hai ispe
+  
+  # PID gains for velocity tracking
+  pid:
+    linear:
+      kp: 1.0
+      ki: 0.1
+      kd: 0.05
+      windup_limit: 0.5     # Anti-windup limit for integrator
+    angular:
+      kp: 2.0
+      ki: 0.2
+      kd: 0.1
+      windup_limit: 1.0
+  
+  # LQR parameters (for future use)
+  lqr:
+    q_pos: 1.0              # Position state weight
+    q_vel: 0.1              # Velocity state weight
+    r_input: 0.01           # Control input weight

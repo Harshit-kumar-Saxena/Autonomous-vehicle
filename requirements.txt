@@ -1,12 +1,28 @@
-ultralytics==8.3.49   # YOLOv8 package for object detection
-opencv-python==4.10.0.84  # OpenCV for video processing
-numpy==2.2.0          # Numerical computations
-matplotlib==3.9.3      # For visualization if needed
-pandas==2.2.3          # For data handling and manipulation
-scipy==1.4.1           # For scientific computations (e.g., PID controllers)
-PySerial==3.5          # For serial communication with sensors
-requests==2.23.3      # To interact with APIs (e.g., Google Maps)
-googlemaps==4.10.0     # Google Maps API
-protobuf==4.21.11      # Required for ONNX models
-onnxruntime==1.13.1    # To run ONNX models for inference
-pyyaml==6.0            # For handling YAML files (e.g., Dataset.yaml)
+# AetherNav Stack Requirements
+
+# Core dependencies
+numpy>=1.21.0
+opencv-python>=4.5.0
+PyYAML>=6.0
+
+# ONNX Runtime (cross-platform inference)
+onnxruntime>=1.15.0
+
+# Serial communication (for motor controller)
+pyserial>=3.5
+
+# Visualization & analysis
+matplotlib>=3.5.0
+scipy>=1.9.0
+
+# TensorRT (Jetson-specific, install via JetPack)
+# tensorrt
+# pycuda
+
+# Optional: Testing
+pytest>=7.0.0
+pytest-cov>=4.0.0
+
+# Optional: Development tools
+black>=22.0.0
+mypy>=1.0.0

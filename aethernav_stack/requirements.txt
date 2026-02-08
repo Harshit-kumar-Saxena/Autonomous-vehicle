@@ -1,0 +1,28 @@
+# AetherNav Stack Requirements
+
+# Core dependencies
+numpy>=1.21.0
+opencv-python>=4.5.0
+PyYAML>=6.0
+
+# ONNX Runtime (cross-platform inference)
+onnxruntime>=1.15.0
+
+# Serial communication (for motor controller)
+pyserial>=3.5
+
+# Visualization & analysis
+matplotlib>=3.5.0
+scipy>=1.9.0
+
+# TensorRT (Jetson-specific, install via JetPack)
+# tensorrt
+# pycuda
+
+# Optional: Testing
+pytest>=7.0.0
+pytest-cov>=4.0.0
+
+# Optional: Development tools
+black>=22.0.0
+mypy>=1.0.0

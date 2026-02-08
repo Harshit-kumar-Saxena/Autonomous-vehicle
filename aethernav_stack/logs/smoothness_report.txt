@@ -1,0 +1,21 @@
+==================================================
+  AETHERNAV TRAJECTORY ANALYSIS REPORT
+==================================================
+
+Duration: 60.01 seconds
+Data points: 1402
+Sample rate: 23.4 Hz
+
+=== Smoothness Report ===
+Linear Jerk:   mean=0.000, max=0.000 m/s³
+Angular Jerk:  mean=0.000, max=0.000 rad/s³
+Linear Vel σ²: 0.0000
+Angular Vel σ²: 0.0000
+Oscillations:  0 zero-crossings, 0.00 Hz
+Curvature:     mean=0.000, max=0.000 1/m
+Curvature Rate: 0.000 1/m²
+──────────────────────────
+Smoothness Score: 0.00 (lower is better)
+
+
+=== Recommendations ===
